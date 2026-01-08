@@ -190,3 +190,10 @@ function loop() { if(isRunning) { update(); draw(); requestAnimationFrame(loop);
         document.getElementById("highScore").innerText = savedScore;
     }
 </script>
+
+// เล่นเสียงติ๊ง 1 ครั้งตรงตำแหน่งที่เก็บไก่
+AudioSource.PlayClipAtPoint(collectSound, transform.position);
+
+// จากนั้นค่อยสั่งทำลายไก่ (โค้ดเดิมของนาย)
+Destroy(gameObject); 
+
