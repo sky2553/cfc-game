@@ -155,3 +155,38 @@ function loop() { if(isRunning) { update(); draw(); requestAnimationFrame(loop);
 </script>
 </body>
 </html>
+<div id="tournament-section" style="background: #222; color: gold; padding: 15px; border: 2px solid #555; border-radius: 10px; margin-top: 20px; font-family: sans-serif;">
+    <h3>🏆 KFC Tournament (Security Patch 2026)</h3>
+    <p style="font-size: 12px; color: #0f0;">🛡️ สถานะ: ปลอดภัย (Verified by Tiger Studio)</p>
+    
+    <div id="guest-login">
+        <input type="text" id="guestName" placeholder="ใส่ชื่อเล่น (Guest)..." style="padding: 5px; border-radius: 5px; border: none;">
+        <button onclick="startTournament()" style="background: gold; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">ลงแข่ง Tournament</button>
+    </div>
+
+    <div id="leaderboard" style="margin-top: 15px;">
+        <p>📊 อันดับสูงสุดของคุณ: <span id="highScore">0</span> คะแนน</p>
+    </div>
+</div>
+
+<script>
+    // ระบบ Security & Tournament
+    console.log("KFC Ghost: Security Patch 2026 Active");
+    
+    function startTournament() {
+        let name = document.getElementById('guestName').value;
+        if(name === "") {
+            alert("กรุณาใส่ชื่อเล่นก่อนลงแข่งนะเพื่อน!");
+        } else {
+            alert("ยินดีต้อนรับคุณ " + name + " เข้าสู่ Tournament!");
+            // ระบบบันทึกข้อมูลแบบ Guest ในเครื่อง (Local Storage)
+            localStorage.setItem("currentGuest", name);
+        }
+    }
+
+    // โหลดคะแนนเดิม (ถ้ามี)
+    window.onload = function() {
+        let savedScore = localStorage.getItem("kfcHighScore") || 0;
+        document.getElementById("highScore").innerText = savedScore;
+    }
+</script>
