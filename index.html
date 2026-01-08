@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="เกมสยองขวัญจากเรื่องจริง ณ รังสิต - พัฒนาโดย Director Tiger">
+    <meta name="author" content="Director Tiger">
+    <title>The Rangsit Mystery | Official Version</title>
+    
+    <style>
+        * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: none; }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
+        canvas { display: block; background: #0a0a0a; margin: 0 auto; }
+        
+        /* หน้า Start Screen เพื่อความเชื่อถือ (User Consent) */
+        #start-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, #222, #000);
+            display: flex; flex-direction: column; justify-content: center;
+            align-items: center; z-index: 200; text-align: center;
+        }
+        .start-btn {
+            padding: 15px 40px; background: #d00; color: white; border: none;
+            border-radius: 30px; font-size: 20px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 0 15px rgba(255,0,0,0.5); transition: 0.3s;
+        }
+        .start-btn:hover { transform: scale(1.1); background: #f00; }
+
+        #ui { position: absolute; top: 20px; width: 100%; text-align: center; font-size: 18px; color: #ff4444; z-index: 10; pointer-events: none; }
+        .controls { position: absolute; bottom: 40px; width: 100%; display: flex; justify-content: center; gap: 20px; z-index: 10; }
+        .btn { width: 70px; height: 70px; background: rgba(255,255,255,0.15); border: 2px solid #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 28px; color: white; }
+        
+        #end-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 100; text-align: center; }
+        .info-card { background: white; color: black; padding: 25px; border-radius: 15px; max-width: 320px; border-left: 10px solid red; }
+    </style>
+</head>
+<body>
+
+    <div id="start-overlay">
+        <h1 style="color: #d00;">THE RANGSIT MYSTERY</h1>
+        <p style="font-size: 14px; color: #888;">สร้างจากเรื่องจริง: ผู้หญิงแจ้งความจับรูปปั้นผู้พัน</p>
+        <button class="start-btn" onclick="startGame()">เริ่มเล่นเกม</button>
+        <p style="font-size: 10px; margin-top: 20px; color: #555;">© 2026 Director Tiger Studio. All Rights Reserved.</p>
+    </div>
+
+    <div id="ui">ช่วยหญิงสาว: <span id="score">0</span> / 5</div>
+    <canvas id="gameCanvas"></canvas>
+    
+    <div class="controls">
+        <div class="btn" id="left">◀</div><div class="btn" id="up">▲</div><div class="btn" id="down">▼</div><div class="btn" id="right">▶</div>
+    </div>
+
+    <audio id="chaseSfx" loop src="https://www.soundboard.com/handler/DownLoadTrack.ashx?cliptoken=e43d467f-5d0b-482a-9e1e-99645902167d"></audio>
+    <audio id="scareSfx" src="https://www.myinstants.com/media/sounds/fnaf-jumpscare-sound.mp3"></audio>
+
+    <div id="end-screen">
+        <div id="end-result"></div>
+        <button onclick="location.reload()" style="margin-top:20px; padding:12px 25px; background:red; color:white; border:none; border-radius:10px; font-weight:bold;">เล่นใหม่อีกครั้ง</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const chaseAudio = document.getElementById('chaseSfx');
+        const scareAudio = document.getElementById('scareSfx');
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let active = false;
+        let score = 0;
+        let tommy = { x: 100, y: 100, s: 25, spd: 5 };
+        let colonel = { x: canvas.width-100, y: canvas.height-100, s: 35, spd: 1.5 };
+        let target = { x: 200, y: 200, s: 25 };
+        let keys = { up: false, down: false, left: false, right: false };
+
+        function startGame() {
+            document.getElementById('start-overlay').style.display = 'none';
+            active = true;
+            chaseAudio.play().catch(()=>{}); // เริ่มระบบเสียง
+            loop();
+        }
+
+        function bindBtn(id) {
+            const el = document.getElementById(id);
+            const start = (e) => { e.preventDefault(); keys[id] = true; };
+            const stop = (e) => { e.preventDefault(); keys[id] = false; };
+            el.addEventListener('touchstart', start); el.addEventListener('touchend', stop);
+            el.addEventListener('mousedown', start); el.addEventListener('mouseup', stop);
+        }
+        ['up','down','left','right'].forEach(bindBtn);
+
+        function update() {
+            if(!active) return;
+            if(keys.up && tommy.y > 0) tommy.y -= tommy.spd;
+            if(keys.down && tommy.y < canvas.height-25) tommy.y += tommy.spd;
+            if(keys.left && tommy.x > 0) tommy.x -= tommy.spd;
+            if(keys.right && tommy.x < canvas.width-25) tommy.x += tommy.spd;
+
+            let dx = tommy.x - colonel.x, dy = tommy.y - colonel.y, d = Math.sqrt(dx*dx+dy*dy);
+            colonel.x += (dx/d) * colonel.spd; colonel.y += (dy/d) * colonel.spd;
+
+            // ระบบเสียง Proximity: ยิ่งใกล้ ยิ่งดัง
+            chaseAudio.volume = d < 450 ? Math.min(1, 1-(d/450)) : 0;
+
+            if(Math.hypot(tommy.x-target.x, tommy.y-target.y) < 30) {
+                score++; document.getElementById('score').innerText = score;
+                target.x = Math.random()*(canvas.width-60)+30;
+                target.y = Math.random()*(canvas.height-150)+50;
+                colonel.spd += 0.2;
+                if(score >= 5) end(true);
+            }
+            if(d < 30) end(false);
+        }
+
+        function end(win) {
+            active = false; chaseAudio.pause();
+            document.getElementById('end-screen').style.display = 'flex';
+            const res = document.getElementById('end-result');
+            if(win) {
+                res.innerHTML = `<div class="info-card"><h3>ภารกิจสำเร็จ!</h3><p>คุณพาเธอแจ้งตำรวจได้ทันเวลา</p><hr><p><b>"ผู้หญิงแจ้งความจับรูปปั้นผู้พัน"</b></p><p style="font-size:12px;">Based on True Story (สภ.รังสิต)</p></div>`;
+            } else {
+                scareAudio.play();
+                res.innerHTML = `<h1 style="color:red; font-size:40px;">GAME OVER</h1><p style="color:white;">ผู้พันแซนเดอร์ส... ไม่ใช่แค่รูปปั้น!</p>`;
+            }
+        }
+
+        function loop() {
+            if(!active) return;
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            ctx.fillStyle = "#ffc0cb"; ctx.fillRect(target.x, target.y, target.s, target.s); // หญิงสาว
+            ctx.fillStyle = "#00ffff"; ctx.fillRect(tommy.x, tommy.y, tommy.s, tommy.s); // Tommy
+            ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(colonel.x+15, colonel.y, 15, 0, Math.PI*2); ctx.fill(); // ผู้พัน
+            ctx.fillStyle = "#f00"; ctx.fillRect(colonel.x+5, colonel.y+5, 20, 10);
+            update(); requestAnimationFrame(loop);
+        }
+    </script>
+</body>
+</html>
