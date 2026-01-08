@@ -3,16 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>KFC Ghost: Leaderboard Edition</title>
+    <title>KFC Ghost: Tiger Security</title>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; touch-action: none; font-family: sans-serif; }
+        /* --- จุดที่แก้: ป้องกันการคัดลอกและการเลือกข้อความทั้งหมด --- */
+        * {
+            -webkit-user-select: none;  /* Safari */
+            -ms-user-select: none;      /* IE 10+ */
+            user-select: none;          /* Standard */
+            -webkit-tap-highlight-color: transparent; /* ลบแถบสีเวลาสไลด์ปุ่ม */
+            touch-action: none;         /* ป้องกันการซูมและเลื่อนหน้าจอ */
+        }
+
+        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
+        canvas { display: block; }
+
+        /* UI หน้าเมนู */
         #overlay { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; 
-                   justify-content: center; align-items: center; background: rgba(0,0,0,0.95); z-index: 100; color: #ff4d4d; text-align: center; }
-        .leaderboard { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin: 15px; color: yellow; min-width: 200px; border: 1px solid #444; }
-        .btn-ui { padding: 15px 40px; font-size: 22px; background: red; color: white; border: none; border-radius: 50px; cursor: pointer; font-weight: bold; }
-        #controls { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: grid; grid-template-columns: repeat(3, 75px); grid-gap: 12px; z-index: 50; display: none; }
-        .btn { width: 75px; height: 75px; background: rgba(255,255,255,0.1); border: 1px solid #fff; color: white; display: flex; justify-content: center; align-items: center; border-radius: 15px; font-size: 30px; }
-        #hud { position: absolute; top: 15px; left: 15px; color: yellow; font-size: 20px; z-index: 40; display: none; }
+                   justify-content: center; align-items: center; background: rgba(0,0,0,0.95); z-index: 100; color: #ff4d4d; }
+        
+        .btn-ui { padding: 15px 40px; font-size: 22px; background: red; color: white; border: none; 
+                  border-radius: 50px; cursor: pointer; font-weight: bold; box-shadow: 0 4px #900; }
+        .btn-ui:active { transform: translateY(2px); box-shadow: 0 2px #900; }
+
+        /* ปุ่มควบคุมมือถือ */
+        #controls { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); 
+                    display: grid; grid-template-columns: repeat(3, 75px); grid-gap: 12px; z-index: 50; display: none; }
+        
+        .btn { width: 75px; height: 75px; background: rgba(255,255,255,0.1); border: 2px solid #fff; 
+               color: white; display: flex; justify-content: center; align-items: center; 
+               border-radius: 15px; font-size: 30px; font-weight: bold; }
+        .btn:active { background: rgba(255,0,0,0.4); } /* ให้รู้ว่ากดโดน */
+
+        #hud { position: absolute; top: 20px; left: 20px; color: yellow; font-size: 20px; z-index: 40; display: none; }
     </style>
 </head>
 <body>
@@ -21,11 +43,8 @@
 
 <div id="overlay">
     <h1 id="title">KFC GHOST</h1>
-    <div class="leaderboard">
-        <h3>🏆 TOP SCORES</h3>
-        <div id="high-score-list">ยังไม่มีคะแนน</div>
-    </div>
-    <button class="btn-ui" onclick="initGame()">PLAY NOW</button>
+    <p style="color: #666;">TIGER SECURITY ENABLED</p>
+    <button class="btn-ui" onclick="initGame()">START GAME</button>
 </div>
 
 <div id="controls">
@@ -36,6 +55,9 @@
 <canvas id="gameCanvas"></canvas>
 
 <script>
+// --- LAYER 1 & 2 Security Check ---
+document.addEventListener('contextmenu', e => e.preventDefault()); // ห้ามคลิกขวา
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
@@ -47,15 +69,6 @@ let chicken = { x: 100, y: 100 };
 let score = 0;
 let gameRunning = false;
 
-// โหลด Leaderboard
-function updateLeaderboardUI() {
-    let scores = JSON.parse(localStorage.getItem('kfcScores')) || [];
-    scores.sort((a, b) => b - a);
-    scores = scores.slice(0, 3); // เอาแค่ 3 อันดับแรก
-    let listHTML = scores.map((s, i) => `อันดับ ${i+1}: ${s} แต้ม`).join('<br>') || "ยังไม่มีคะแนน";
-    document.getElementById('high-score-list').innerHTML = listHTML;
-}
-
 function initGame() {
     score = 0;
     tiger.x = canvas.width/2; tiger.y = canvas.height/2;
@@ -63,43 +76,44 @@ function initGame() {
     document.getElementById('overlay').style.display = 'none';
     document.getElementById('controls').style.display = 'grid';
     document.getElementById('hud').style.display = 'block';
+    document.getElementById('hud').innerText = "🍗 Score: 0";
     gameRunning = true;
     requestAnimationFrame(update);
 }
 
 function gameOver() {
     gameRunning = false;
-    // บันทึกคะแนน
-    let scores = JSON.parse(localStorage.getItem('kfcScores')) || [];
-    scores.push(score);
-    localStorage.setItem('kfcScores', JSON.stringify(scores));
-    
     document.getElementById('overlay').style.display = 'flex';
-    document.getElementById('title').innerText = "โดนผีแดก!";
-    updateLeaderboardUI();
+    document.getElementById('title').innerText = "GAME OVER";
+    document.getElementById('title').style.color = "red";
 }
 
 function move(dir) {
     if (!gameRunning) return;
-    if (dir === 'up') tiger.y -= 30;
-    if (dir === 'down') tiger.y += 30;
-    if (dir === 'left') tiger.x -= 30;
-    if (dir === 'right') tiger.x += 30;
+    const s = 30;
+    if (dir === 'up') tiger.y -= s;
+    if (dir === 'down') tiger.y += s;
+    if (dir === 'left') tiger.x -= s;
+    if (dir === 'right') tiger.x += s;
 }
 
 function update() {
     if (!gameRunning) return;
+
+    // AI ผี
     if (ghost.x < tiger.x) ghost.x += ghost.speed; else ghost.x -= ghost.speed;
     if (ghost.y < tiger.y) ghost.y += ghost.speed; else ghost.y -= ghost.speed;
 
+    // เก็บไก่
     if (Math.hypot(tiger.x - chicken.x, tiger.y - chicken.y) < 40) {
         score++;
         document.getElementById('hud').innerText = "🍗 Score: " + score;
-        chicken.x = Math.random() * (canvas.width - 50) + 25;
+        chicken.x = Math.random() * (canvas.width - 60) + 30;
         chicken.y = Math.random() * (canvas.height - 150) + 50;
-        ghost.speed += 0.1;
+        ghost.speed += 0.08;
     }
 
+    // โดนผี
     if (Math.hypot(tiger.x - ghost.x, tiger.y - ghost.y) < 35) gameOver();
 
     ctx.fillStyle = "#0a0a0a";
@@ -112,9 +126,6 @@ function update() {
     
     if (gameRunning) requestAnimationFrame(update);
 }
-
-// โหลดคะแนนครั้งแรก
-updateLeaderboardUI();
 </script>
 </body>
 </html>
